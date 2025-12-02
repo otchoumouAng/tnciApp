@@ -12,10 +12,6 @@ import BackgroundImage from '../../assets/background.png';
 
 
 const modules = [
-  { id: "stock", title: "Stock", icon: Package, screen: "Stock" },
-  { id: "sortie", title: "Sortie", icon: Truck, screen: "Sortie" },
-  { id: "entre", title: "Entrée", icon: TrayArrowDown, screen: "Entre" },
-  { id: "mouvementStock", title: "Mouvement", icon: ArrowsLeftRight, screen: "MouvementStock" },
   { id: "declarationPalette", title: "Déclaration Palette", icon: Package, screen: "DeclarationPalette" },
 ];
 
