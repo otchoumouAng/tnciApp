@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 // MODIFICATION: Import de 'Archive' pour l'icône des sacs
 import { Package, Archive } from 'phosphor-react-native';
 // Assurez-vous que le chemin vers le type Lot est correct
-import { Lot } from '../types/lot'; 
+import { Lot } from '../type';
 
 interface LotCardProps {
   item: Lot;
