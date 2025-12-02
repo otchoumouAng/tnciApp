@@ -1,7 +1,7 @@
 //SHARED/ROUTE.TS
 
 import axios from 'axios';
-import { MouvementStock } from '../modules/MouvementStock/type';
+import { MouvementStock } from '../MouvementStock/type';
 import { baseUrl } from '../../config';
 // --- MODIFICATION ---
 import { Magasin, Parametres } from './type'; // Assurez-vous que Parametres est aussi dans './type'
