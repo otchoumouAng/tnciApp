@@ -1,0 +1,318 @@
+import { StyleSheet } from 'react-native';
+
+export const Colors = {
+  primary: '#16ce22',
+  secondary: '#64748b',
+  success: '#22c55e',
+  error: '#ef4444',
+  warning: '#ffc107',
+  danger: '#ff6347',
+  background: '#f8fafc',
+  lightGray: '#f0f2f5',
+  card: '#ffffff',
+  text: '#1e293b',
+  border: '#e2e8f0',
+  textLight: '#888',
+  textMedium: '#666',
+  textDark: '#333',
+  statusBlue: '#007bff',
+};
+
+export const Typography = {
+  h1: {
+    fontSize: 24,
+    fontWeight: 'bold' as const,
+  },
+  h2: {
+    fontSize: 20,
+    fontWeight: '600' as const,
+  },
+  body: {
+    fontSize: 16,
+  },
+  caption: {
+    fontSize: 14,
+    color: Colors.secondary,
+  },
+};
+
+export const Spacing = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+};
+
+export const Styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  card: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    padding: Spacing.md,
+    margin: Spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  buttonPrimary: {
+    backgroundColor: Colors.primary,
+    padding: Spacing.md,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonPrimaryLogin: {
+    backgroundColor: '#9c1d37',
+    padding: Spacing.md,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonSecondary: {
+    backgroundColor: Colors.secondary,
+    padding: Spacing.md,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    padding: Spacing.sm,
+    marginVertical: Spacing.sm,
+  },
+  textButton: {
+    color: Colors.card,
+    fontWeight: '600',
+  },
+  list: {
+    paddingVertical: Spacing.sm,
+  },
+  loader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCenteredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    width: '90%',
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  modalScrollView: {
+    width: '100%',
+    marginBottom: 15,
+  },
+  modalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    width: '100%',
+  },
+  modalLabel: {
+    fontWeight: 'bold',
+    color: '#333',
+    flex: 1,
+  },
+  modalValue: {
+    color: '#555',
+    flex: 1.5,
+    textAlign: 'left',
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginTop: 10,
+  },
+  lotCard: {
+    backgroundColor: Colors.card,
+    borderRadius: 8,
+    marginVertical: 6,
+    marginHorizontal: 12,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderLeftWidth: 5,
+  },
+  lotCardIconContainer: {
+    marginRight: 12,
+  },
+  lotCardDetailsContainer: {
+    flex: 1,
+  },
+  lotCardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  lotCardLotNumber: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: Colors.textDark,
+    flex: 1,
+  },
+  lotCardDateText: {
+    fontSize: 12,
+    color: Colors.textMedium,
+  },
+  lotCardPoidsText: {
+    fontSize: 14,
+    color: Colors.text,
+    fontWeight: '500',
+  },
+  lotCardStatusText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: Colors.text,
+    backgroundColor: Colors.lightGray,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  lotCardSubText: {
+    fontSize: 12,
+    color: Colors.textLight,
+    marginTop: 4,
+  },
+  mouvementStockCard: {
+    backgroundColor: Colors.card,
+    borderRadius: 8,
+    marginVertical: 6,
+    marginHorizontal: 12,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderLeftWidth: 5,
+  },
+  mouvementStockCardIconContainer: {
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mouvementStockCardDetailsContainer: {
+    flex: 1,
+  },
+  mouvementStockCardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  mouvementStockCardTypeText: {
+    fontSize: 16,
+    fontWeight: 'normal',
+    color: Colors.textDark,
+    flex: 1,
+  },
+  mouvementStockCardDateText: {
+    fontSize: 12,
+    color: Colors.textMedium,
+  },
+  mouvementStockCardPoidsText: {
+    fontSize: 14,
+    color: Colors.text,
+    fontWeight: '500',
+  },
+  mouvementStockCardStatusText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+  },
+  mouvementStockCardMagasinText: {
+    fontSize: 12,
+    color: Colors.textLight,
+    marginTop: 4,
+  },
+  filterContainer: {
+    padding: 10,
+    backgroundColor: Colors.lightGray,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    maxHeight: 350,
+  },
+  filterTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  filterPickerContainer: {
+    backgroundColor: Colors.card,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 10,
+    height: 50,
+    justifyContent: 'center',
+  },
+  filterPickerLabel: {
+    color: Colors.textMedium,
+    fontSize: 12,
+    paddingHorizontal: 10,
+    position: 'absolute',
+    top: 1,
+  },
+  filterPicker: {
+    width: '100%',
+    marginTop: 10,
+  },
+  filterInput: {
+    backgroundColor: Colors.card,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 5,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    height: 40,
+  },
+  filterButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 50,
+    fontSize: 16,
+    color: 'gray',
+  },
+  lotInfo: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  lotInfoBold: {
+    fontWeight: 'bold',
+  },
+});
