@@ -13,6 +13,7 @@ import BackgroundImage from '../../assets/background.png';
 
 const modules = [
   { id: "declarationPalette", title: "Déclaration Palette", icon: Package, screen: "DeclarationPalette" },
+  { id: "deplacerPalette", title: "Déplacer Palette", icon: Truck, screen: "DeplacerPalette" },
 ];
 
 export default function HomeScreen() {
