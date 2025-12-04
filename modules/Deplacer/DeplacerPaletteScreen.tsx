@@ -165,7 +165,7 @@ const DeplacerPaletteScreen = () => {
 
       if (finalMessage.toLowerCase().includes("déjà en cours de transit")) {
         setTimeout(() => {
-          showResult('warning', 'Déjà en Transit', "Cette palette est déjà en cours de transit (Transfert non réceptionné).");
+          showResult('warning', 'Déjà en Transit', "Cette palette est déjà en transit.");
         }, 300);
       } else {
         setTimeout(() => {
@@ -188,9 +188,10 @@ const DeplacerPaletteScreen = () => {
         <Text style={localStyles.itemTitle}>{item.numero}</Text>
       </View>
       <View style={localStyles.itemBody}>
+        <Text style={localStyles.itemText}><Text style={localStyles.bold}>N° Fabrication:</Text> {item.numeroProduction}</Text>
         <Text style={localStyles.itemText}><Text style={localStyles.bold}>Article:</Text> {item.nomArticle}</Text>
         <Text style={localStyles.itemText}><Text style={localStyles.bold}>Produit:</Text> {item.produitDesignation}</Text>
-         {/* Assuming dateDeclaration is relevant, or we might want date of movement if available in Palette, but using dateDeclaration for now as history */}
+        <Text style={localStyles.itemText}><Text style={localStyles.bold}>Poids Net:</Text> {item.poidsNetPalette} kg</Text>
         <Text style={localStyles.dateText}>{item.dateDeclaration ? new Date(item.dateDeclaration).toLocaleDateString() + ' ' + new Date(item.dateDeclaration).toLocaleTimeString() : 'N/A'}</Text>
       </View>
     </View>
