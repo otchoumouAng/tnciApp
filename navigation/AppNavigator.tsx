@@ -6,6 +6,7 @@ import HomeScreen from '../modules/Home/HomeScreen';
 import SettingsScreen from '../modules/Settings/SettingsScreen';
 import ProfileScreen from '../modules/Profil/ProfileScreen';
 import DeclarationPaletteScreen from '../modules/DeclarationPalette/DeclarationPaletteScreen';
+import DeplacerPaletteScreen from '../modules/Deplacer/DeplacerPaletteScreen';
 // import Palette from '../screens/Palette';
 // import OrderPlaceholder from '../screens/OrderPlaceholder';
 import { Colors } from '../styles/style';
@@ -25,6 +26,11 @@ function HomeStack() {
         name="DeclarationPalette"
         component={DeclarationPaletteScreen}
         options={{ headerTitle: 'Déclaration Palette' }}
+      />
+      <Stack.Screen
+        name="DeplacerPalette"
+        component={DeplacerPaletteScreen}
+        options={{ headerTitle: 'Déplacer Palette' }}
       />
       
     </Stack.Navigator>
