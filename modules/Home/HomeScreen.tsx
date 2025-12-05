@@ -12,9 +12,9 @@ import BackgroundImage from '../../assets/background.png';
 
 
 const modules = [
-  { id: "declarationPalette", title: "Déclaration Palette", icon: Package, screen: "DeclarationPalette" },
-  { id: "deplacerPalette", title: "Déplacer Palette", icon: Truck, screen: "DeplacerPalette" },
-  { id: "receptionPalette", title: "Réception Palette", icon: TrayArrowDown, screen: "ReceptionPalette" },
+  { id: "declarationPalette", title: "Déclaration", icon: Package, screen: "DeclarationPalette" },
+  { id: "deplacerPalette", title: "Enlèvement", icon: Truck, screen: "DeplacerPalette" },
+  { id: "receptionPalette", title: "Dépose", icon: TrayArrowDown, screen: "ReceptionPalette" },
 ];
 
 export default function HomeScreen() {
