@@ -5,13 +5,9 @@ import { House, User, Gear, Users, Package, ShoppingCart } from 'phosphor-react-
 import HomeScreen from '../modules/Home/HomeScreen';
 import SettingsScreen from '../modules/Settings/SettingsScreen';
 import ProfileScreen from '../modules/Profil/ProfileScreen';
-import MouvementStockScreen from '../modules/MouvementStock/MouvementStockScreen';
-import EntreScreen from '../modules/Entre/EntreScreen';
-import SortieScreen from '../modules/Sortie/SortieScreen';
-import TransfertScreen from '../modules/Sortie/TransfertScreen';
-import ReceptionScreen from '../modules/Entre/ReceptionScreen';
-import StockScreen from '../modules/Stock/StockScreen';
 import DeclarationPaletteScreen from '../modules/DeclarationPalette/DeclarationPaletteScreen';
+import DeplacerPaletteScreen from '../modules/Deplacer/DeplacerPaletteScreen';
+import ReceptionPaletteScreen from '../modules/Reception/ReceptionPaletteScreen';
 // import Palette from '../screens/Palette';
 // import OrderPlaceholder from '../screens/OrderPlaceholder';
 import { Colors } from '../styles/style';
@@ -28,40 +24,19 @@ function HomeStack() {
         options={{ headerTitle: 'Digital Commodity Sourcing' }}
       />
       <Stack.Screen
-        name="MouvementStock"
-        component={MouvementStockScreen}
-        options={{ headerTitle: 'Mouvement' }}
-      />
-      <Stack.Screen
-        name="Entre"
-        component={EntreScreen}
-        options={{ headerTitle: 'Entrée de Lots' }}
-      />
-      <Stack.Screen
-        name="Sortie"
-        component={SortieScreen}
-        options={{ headerTitle: 'Sortie de Lots' }}
-      />
-      <Stack.Screen
-        name="Transfert"
-        component={TransfertScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
-        name="ReceptionScreen" 
-        component={ReceptionScreen} 
-        options={{ headerShown: false }}
-      />
-
-      <Stack.Screen
-        name="Stock"
-        component={StockScreen}
-        options={{ headerTitle: 'Stock' }}
-      />
-      <Stack.Screen
         name="DeclarationPalette"
         component={DeclarationPaletteScreen}
         options={{ headerTitle: 'Déclaration Palette' }}
+      />
+      <Stack.Screen
+        name="DeplacerPalette"
+        component={DeplacerPaletteScreen}
+        options={{ headerTitle: 'Déplacer Palette' }}
+      />
+      <Stack.Screen
+        name="ReceptionPalette"
+        component={ReceptionPaletteScreen}
+        options={{ headerTitle: 'Réception Palette' }}
       />
       
     </Stack.Navigator>

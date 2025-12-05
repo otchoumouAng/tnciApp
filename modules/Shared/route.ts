@@ -1,7 +1,6 @@
 //SHARED/ROUTE.TS
 
 import axios from 'axios';
-import { MouvementStock } from '../modules/MouvementStock/type';
 import { baseUrl } from '../../config';
 // --- MODIFICATION ---
 import { Magasin, Parametres } from './type'; // Assurez-vous que Parametres est aussi dans './type'
@@ -60,29 +59,13 @@ export const getParametres = async (): Promise<Parametres> => {
 // --- FIN NOUVEAU ---
 
 
-/**
- * Fetches the list of stock movements with optional filters.
- * @param params - The query parameters for filtering.
- */
-export const getMouvements = async (params: URLSearchParams): Promise<MouvementStock[]> => {
-  try {
-    const response = await api.get('/mouvementstock', { params });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching stock movements:', error);
-    throw error;
-  }
-};
-
 export const getExportateurs = () => getDropdownData('exportateur');
 export const getSites = () => getDropdownData('site');
-export const getMouvementStockTypes = () => getDropdownData('mouvementstocktype');
 export const getMagasins = () => getDropdownData('magasin');
 export const getCertifications = () => getDropdownData('certification'); 
 export const getGrades = () => getDropdownData('grade');
 export const getLotTypes = () => getDropdownData('lottype');
 export const getProduits = () => getDropdownData('produit');
-export const getOperationType = () => getDropdownData('operationType');
 
 
 /**

@@ -113,3 +113,16 @@ export interface TransfertLot {
     modeTransfertID: number;
     typeOperationID: number;
 }
+
+/**
+ * Représente la réponse de l'API /api/parametre
+ */
+export interface Parametres {
+  sites: any | null;
+  campagne: string;
+  exportateur: number;
+  exportateurNom: string;
+  nomSociete: string;
+  adresseSociete: string;
+  telSociete: string;
+}

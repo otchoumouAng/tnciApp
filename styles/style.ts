@@ -315,4 +315,10 @@ export const Styles = StyleSheet.create({
   lotInfoBold: {
     fontWeight: 'bold',
   },
+  errorText: {
+    color: Colors.error,
+    textAlign: 'center',
+    margin: Spacing.md,
+    fontSize: 16,
+  },
 });
