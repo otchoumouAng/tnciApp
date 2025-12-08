@@ -45,7 +45,7 @@ export default function HomeScreen() {
           </View>
           <View style={{ alignItems: 'center' }}>
             <Text style={[Typography.h2, { color: Colors.textDark }]}>Bienvenue, {user?.name}!</Text>
-            <Text style={[Typography.body, { color: Colors.textMedium }]}>{user?.magasinNom}</Text>
+            {/* Magasin removed as requested */}
           </View>
         </View>
         

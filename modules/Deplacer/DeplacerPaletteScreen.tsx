@@ -379,6 +379,24 @@ const DeplacerPaletteScreen = () => {
                     </View>
                  </View>
 
+                 {/* --- NEW DETAILS --- */}
+                 <View style={[localStyles.detailGrid, { marginTop: -10 }]}>
+                    <View style={localStyles.detailItem}>
+                        <Text style={localStyles.detailLabel}>N° Production</Text>
+                        <Text style={localStyles.detailValue}>{scannedPalette.numeroProduction}</Text>
+                    </View>
+                 </View>
+                 <View style={[localStyles.detailGrid, { marginTop: -10 }]}>
+                    <View style={localStyles.detailItem}>
+                        <Text style={localStyles.detailLabel}>Produit</Text>
+                        <Text style={localStyles.detailValue}>{scannedPalette.produitDesignation}</Text>
+                    </View>
+                    <View style={localStyles.detailItem}>
+                        <Text style={localStyles.detailLabel}>Type</Text>
+                        <Text style={localStyles.detailValue}>{scannedPalette.typeProduitDesignation}</Text>
+                    </View>
+                 </View>
+
                  {/* --- OPERATION TYPE SELECTOR (PICKER) --- */}
                  <View style={localStyles.operationSection}>
                     <Text style={localStyles.sectionTitle}>Type d'opération</Text>
