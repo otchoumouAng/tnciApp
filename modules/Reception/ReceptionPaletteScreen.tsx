@@ -148,9 +148,13 @@ const ReceptionPaletteScreen = () => {
             throw new Error("Palette introuvable.");
         }
 
-        // Check if palette is in transit (status check could be added here if needed, relying on data for now)
-        // If we want to be strict, we could check palette.statut === 'EnTransit' or similar if that property existed/was standardized.
-        // For now, let's assume if it exists, the operator can try to receive it.
+        // --- VERIFICATION DU STATUT DE TRANSIT ---
+        // Une palette est en transit si :
+        // 1. statut == 'DC'
+        // 2. stockMagasinID == 1002
+        if (palette.statut !== 'DC' || palette.stockMagasinID !== 1002) {
+            throw new Error("Cette palette n'est pas en transit.");
+        }
 
         setSelectedPalette(palette);
         // Reset scan mode
