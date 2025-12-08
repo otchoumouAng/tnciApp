@@ -394,8 +394,8 @@ const ReceptionPaletteScreen = () => {
 
                  <Text style={[localStyles.subHeader, {marginTop: 15}]}>Emplacement Destination</Text>
                  <View style={localStyles.infoBox}>
-                    <Text style={localStyles.infoText}><Text style={localStyles.bold}>ID:</Text> {scannedEmplacement?.id}</Text>
-                    <Text style={localStyles.infoText}><Text style={localStyles.bold}>Designation:</Text> {scannedEmplacement?.designation}</Text>
+                    <Text style={localStyles.infoText}><Text style={localStyles.bold}>Magasin:</Text> {scannedEmplacement?.magasinDesignation || 'Inconnu'}</Text>
+                    <Text style={localStyles.infoText}><Text style={localStyles.bold}>Emplacement:</Text> {scannedEmplacement?.designation}</Text>
                  </View>
             </View>
 

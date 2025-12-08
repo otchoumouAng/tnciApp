@@ -18,6 +18,7 @@ import { Styles, Colors } from '../../styles/style';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../../contexts/AuthContext';
+import { Picker } from '@react-native-picker/picker';
 
 const { width } = Dimensions.get('window');
 const SCAN_SIZE = width * 0.7;
@@ -378,33 +379,22 @@ const DeplacerPaletteScreen = () => {
                     </View>
                  </View>
 
-                 {/* --- OPERATION TYPE SELECTOR --- */}
+                 {/* --- OPERATION TYPE SELECTOR (PICKER) --- */}
                  <View style={localStyles.operationSection}>
                     <Text style={localStyles.sectionTitle}>Type d'opération</Text>
                     {isOperationTypesLoading ? (
                         <ActivityIndicator color={Colors.primary} size="small" />
                     ) : (
-                        <View style={localStyles.operationList}>
-                            {operationTypes.map((op) => (
-                                <TouchableOpacity
-                                    key={op.id}
-                                    style={[
-                                        localStyles.operationChip,
-                                        selectedOperationTypeId === op.id && localStyles.operationChipActive
-                                    ]}
-                                    onPress={() => setSelectedOperationTypeId(op.id)}
-                                >
-                                    <Text style={[
-                                        localStyles.operationChipText,
-                                        selectedOperationTypeId === op.id && localStyles.operationChipTextActive
-                                    ]}>
-                                        {op.designation}
-                                    </Text>
-                                    {selectedOperationTypeId === op.id && (
-                                        <Ionicons name="checkmark" size={16} color="white" style={{marginLeft: 5}} />
-                                    )}
-                                </TouchableOpacity>
-                            ))}
+                        <View style={localStyles.pickerContainer}>
+                            <Picker
+                                selectedValue={selectedOperationTypeId}
+                                onValueChange={(itemValue) => setSelectedOperationTypeId(itemValue)}
+                                style={localStyles.picker}
+                            >
+                                {operationTypes.map((op) => (
+                                    <Picker.Item key={op.id} label={op.designation} value={op.id} />
+                                ))}
+                            </Picker>
                         </View>
                     )}
                  </View>
@@ -513,15 +503,13 @@ const localStyles = StyleSheet.create({
   // Operations
   operationSection: { marginBottom: 20 },
   sectionTitle: { fontSize: 14, fontWeight: '700', color: '#2D3748', marginBottom: 10 },
-  operationList: { flexDirection: 'row', flexWrap: 'wrap' },
-  operationChip: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 15,
-    borderRadius: 20, backgroundColor: '#F0F4F8', marginRight: 10, marginBottom: 10,
-    borderWidth: 1, borderColor: '#E2E8F0'
+  pickerContainer: {
+    borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, backgroundColor: '#F0F4F8', overflow: 'hidden'
   },
-  operationChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  operationChipText: { fontSize: 13, color: '#4A5568', fontWeight: '600' },
-  operationChipTextActive: { color: 'white' },
+  picker: {
+    height: 50,
+    width: '100%'
+  },
   
   actionWarning: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EBF8FF', padding: 15, borderRadius: 12 },
   
