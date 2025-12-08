@@ -46,6 +46,8 @@ const ReceptionPaletteScreen = () => {
 
   // Process State
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [scannedEmplacement, setScannedEmplacement] = useState<Emplacement | null>(null);
+  const [isConfirmationVisible, setIsConfirmationVisible] = useState<boolean>(false);
 
   // Result Modal State
   const [resultModal, setResultModal] = useState<{
@@ -117,6 +119,7 @@ const ReceptionPaletteScreen = () => {
     // If success, refresh list and close detail modal
     if (resultModal.type === 'success') {
         setSelectedPalette(null);
+        setScannedEmplacement(null);
         fetchTransitPalettes();
     }
   };
@@ -146,19 +149,39 @@ const ReceptionPaletteScreen = () => {
             throw new Error("L'emplacement scanné n'est associé à aucun magasin.");
         }
 
-        // 3. Call Reception API
+        // 3. Set scanned emplacement and show confirmation
+        setScannedEmplacement(emplacement);
+        setIsConfirmationVisible(true);
+
+    } catch (error: any) {
+        const msg = error.message || "Une erreur est survenue lors de la lecture de l'emplacement.";
+        setTimeout(() => {
+            showResult('error', 'Échec Scan', msg);
+        }, 500);
+    } finally {
+        setIsProcessing(false);
+    }
+  };
+
+  const confirmReception = async () => {
+    if (!selectedPalette || !scannedEmplacement || !user) return;
+
+    setIsConfirmationVisible(false);
+    setIsProcessing(true);
+
+    try {
+        // Call Reception API
         await receptionnerPalette({
             paletteId: selectedPalette.id,
-            magasinDestinationId: emplacement.magasinId,
-            emplacementDestinationID: emplacement.id,
+            magasinDestinationId: scannedEmplacement.magasinId!,
+            emplacementDestinationID: scannedEmplacement.id,
             creationUser: user.name
         });
 
-        // 4. Success
+        // Success
         setTimeout(() => {
-            showResult('success', 'Réception Réussie', `Palette réceptionnée à l'emplacement ${emplacement.designation}.`);
+            showResult('success', 'Réception Réussie', `Palette réceptionnée à l'emplacement ${scannedEmplacement.designation}.`);
         }, 500);
-
     } catch (error: any) {
         const msg = error.message || "Une erreur est survenue lors de la réception.";
         setTimeout(() => {
@@ -167,6 +190,11 @@ const ReceptionPaletteScreen = () => {
     } finally {
         setIsProcessing(false);
     }
+  };
+
+  const cancelReception = () => {
+    setScannedEmplacement(null);
+    setIsConfirmationVisible(false);
   };
 
   const renderItem = ({ item }: { item: Palette }) => (
@@ -305,10 +333,10 @@ const ReceptionPaletteScreen = () => {
         </View>
       </Modal>
 
-      {/* --- MODAL DETAILS PALETTE --- */}
+      {/* --- MODAL DETAILS PALETTE (First step) --- */}
       <Modal
         transparent={true}
-        visible={!!selectedPalette}
+        visible={!!selectedPalette && !isConfirmationVisible}
         animationType="fade"
         onRequestClose={() => setSelectedPalette(null)}
       >
@@ -337,6 +365,46 @@ const ReceptionPaletteScreen = () => {
                 </TouchableOpacity>
                 <TouchableOpacity style={[localStyles.modalButton, localStyles.confirmBtn]} onPress={() => setCameraVisible(true)}>
                   <Text style={localStyles.confirmBtnText}>SCANNER EMPLACEMENT</Text>
+                </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* --- CONFIRMATION MODAL (Final step) --- */}
+      <Modal
+        transparent={true}
+        visible={isConfirmationVisible}
+        animationType="slide"
+        onRequestClose={cancelReception}
+      >
+        <View style={localStyles.modalOverlay}>
+          <View style={localStyles.modalContent}>
+            <View style={localStyles.modalHeader}>
+              <Ionicons name="help-circle" size={50} color={Colors.primary} />
+              <Text style={localStyles.modalTitle}>Confirmer Dépose ?</Text>
+            </View>
+
+            <View style={localStyles.modalDetails}>
+                 <Text style={localStyles.subHeader}>Palette</Text>
+                 <View style={localStyles.infoBox}>
+                    <Text style={localStyles.infoText}><Text style={localStyles.bold}>N°:</Text> {selectedPalette?.numero}</Text>
+                    <Text style={localStyles.infoText}><Text style={localStyles.bold}>Produit:</Text> {selectedPalette?.produitDesignation}</Text>
+                 </View>
+
+                 <Text style={[localStyles.subHeader, {marginTop: 15}]}>Emplacement Destination</Text>
+                 <View style={localStyles.infoBox}>
+                    <Text style={localStyles.infoText}><Text style={localStyles.bold}>ID:</Text> {scannedEmplacement?.id}</Text>
+                    <Text style={localStyles.infoText}><Text style={localStyles.bold}>Designation:</Text> {scannedEmplacement?.designation}</Text>
+                 </View>
+            </View>
+
+            <View style={localStyles.modalButtonContainer}>
+                <TouchableOpacity style={[localStyles.modalButton, localStyles.cancelBtn]} onPress={cancelReception}>
+                  <Text style={localStyles.cancelBtnText}>ANNULER</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[localStyles.modalButton, localStyles.confirmBtn]} onPress={confirmReception}>
+                  <Text style={localStyles.confirmBtnText}>VALIDER</Text>
                 </TouchableOpacity>
             </View>
           </View>
@@ -426,6 +494,11 @@ const localStyles = StyleSheet.create({
   cancelBtnText: { color: '#777', fontWeight: 'bold', letterSpacing: 1 },
   confirmBtn: { backgroundColor: Colors.primary },
   confirmBtnText: { color: 'white', fontWeight: 'bold', letterSpacing: 1 },
+
+  // --- NEW STYLES FOR CONFIRMATION MODAL ---
+  subHeader: { fontSize: 14, fontWeight: 'bold', color: '#666', marginBottom: 5, textTransform: 'uppercase' },
+  infoBox: { backgroundColor: '#F5F7FA', padding: 10, borderRadius: 8 },
+  infoText: { fontSize: 15, marginBottom: 3, color: '#333' },
 
   // --- MODAL DE RÉSULTAT ---
   resultModalContent: { width: '85%', backgroundColor: 'white', borderRadius: 12, padding: 30, alignItems: 'center', elevation: 10, borderTopWidth: 8 },

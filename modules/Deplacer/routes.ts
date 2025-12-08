@@ -1,5 +1,5 @@
 import { api, handleNetworkError } from '../Shared/route';
-import { Palette, PaletteDeplacementRequest, PaletteDeplacementResponse } from './type';
+import { Palette, PaletteDeplacementRequest, PaletteDeplacementResponse, OperationType } from './type';
 
 /**
  * Fetches palette details from the API using its ID.
@@ -43,4 +43,21 @@ export const getPalettesEnTransit = async (userId: string): Promise<Palette[]> =
     } catch (error) {
         throw handleNetworkError(error, 'getPalettesEnTransit');
     }
+}
+
+/**
+ * Fetches the list of available operation types.
+ */
+export const getOperationTypes = async (): Promise<OperationType[]> => {
+  try {
+    const response = await api.get('/operationType');
+    return response.data;
+  } catch (error) {
+    // If the API fails, we can return a default list or throw, depending on requirements.
+    // For now, let's assume it should work and throw if not.
+    console.error("Failed to fetch operation types", error);
+     // Fallback if API fails? Or rethrow?
+     // Rethrowing so the UI can handle or ignore.
+     throw handleNetworkError(error, 'getOperationTypes');
+  }
 }

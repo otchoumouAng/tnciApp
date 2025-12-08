@@ -3,7 +3,7 @@ import React, { useContext } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, ImageBackground } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from '../../contexts/AuthContext';
-import { Users, Truck, TrayArrowDown, ArrowsLeftRight, Package } from "phosphor-react-native";
+import { Users, Truck, TrayArrowDown, ArrowsLeftRight, Package, UserCircle } from "phosphor-react-native";
 import { Styles, Colors, Spacing, Typography } from '../../styles/style';
 import Logo from '../../assets/Logo.png';
 // Vous avez importé votre image de fond (actuellement la même que le logo)
@@ -15,6 +15,7 @@ const modules = [
   { id: "declarationPalette", title: "Déclaration", icon: Package, screen: "DeclarationPalette" },
   { id: "deplacerPalette", title: "Enlèvement", icon: Truck, screen: "DeplacerPalette" },
   { id: "receptionPalette", title: "Dépose", icon: TrayArrowDown, screen: "ReceptionPalette" },
+  { id: "profil", title: "Profil", icon: UserCircle, screen: "Profil" },
 ];
 
 export default function HomeScreen() {
