@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Palette, Emplacement } from './type';
 import { getPalettesEnTransit, getEmplacementById, receptionnerPalette } from './routes';
+import { getPaletteById } from '../Deplacer/routes'; // Use route from Deplacer to fetch by ID
 import { Styles, Colors } from '../../styles/style';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,6 +41,9 @@ const ReceptionPaletteScreen = () => {
 
   // Camera State
   const [isCameraVisible, setCameraVisible] = useState<boolean>(false);
+  // Scan Mode: 'NONE' | 'SCAN_EMPLACEMENT' | 'SEARCH_PALETTE'
+  const [scanMode, setScanMode] = useState<'NONE' | 'SCAN_EMPLACEMENT' | 'SEARCH_PALETTE'>('NONE');
+
   const [permission, requestPermission] = useCameraPermissions();
   const [torchEnabled, setTorchEnabled] = useState<boolean>(false);
   const scanAnim = useRef(new Animated.Value(0)).current;
@@ -124,21 +128,53 @@ const ReceptionPaletteScreen = () => {
     }
   };
 
-  const handleEmplacementScanned = async ({ data }: { data: string }) => {
-    // Only process if we have a selected palette and camera is open
-    if (!isCameraVisible || !selectedPalette || !user) return;
+  const handleCameraScan = async ({ data }: { data: string }) => {
+    if (!isCameraVisible || !user) return;
 
+    // Dispatch based on scanMode
+    if (scanMode === 'SCAN_EMPLACEMENT') {
+        handleEmplacementScanned(data);
+    } else if (scanMode === 'SEARCH_PALETTE') {
+        handlePaletteSearch(data);
+    }
+  };
+
+  const handlePaletteSearch = async (data: string) => {
+    setCameraVisible(false);
+    setIsProcessing(true);
+    try {
+        const palette = await getPaletteById(data);
+        if (!palette) {
+            throw new Error("Palette introuvable.");
+        }
+
+        // Check if palette is in transit (status check could be added here if needed, relying on data for now)
+        // If we want to be strict, we could check palette.statut === 'EnTransit' or similar if that property existed/was standardized.
+        // For now, let's assume if it exists, the operator can try to receive it.
+
+        setSelectedPalette(palette);
+        // Reset scan mode
+        setScanMode('NONE');
+
+    } catch (error: any) {
+         setTimeout(() => {
+            showResult('error', 'Recherche Échouée', error.message || "Impossible de trouver la palette.");
+        }, 500);
+    } finally {
+        setIsProcessing(false);
+    }
+  };
+
+  const handleEmplacementScanned = async (data: string) => {
     setCameraVisible(false);
     setIsProcessing(true);
 
     try {
-        // 1. Parse Emplacement ID
         const emplacementId = parseInt(data, 10);
         if (isNaN(emplacementId)) {
             throw new Error("Le QR Code ne contient pas un ID d'emplacement valide.");
         }
 
-        // 2. Fetch Emplacement Details
         const emplacement = await getEmplacementById(emplacementId);
 
         if (!emplacement) {
@@ -149,9 +185,9 @@ const ReceptionPaletteScreen = () => {
             throw new Error("L'emplacement scanné n'est associé à aucun magasin.");
         }
 
-        // 3. Set scanned emplacement and show confirmation
         setScannedEmplacement(emplacement);
         setIsConfirmationVisible(true);
+        setScanMode('NONE');
 
     } catch (error: any) {
         const msg = error.message || "Une erreur est survenue lors de la lecture de l'emplacement.";
@@ -163,6 +199,16 @@ const ReceptionPaletteScreen = () => {
     }
   };
 
+  const startScanEmplacement = () => {
+      setScanMode('SCAN_EMPLACEMENT');
+      setCameraVisible(true);
+  };
+
+  const startSearchPalette = () => {
+      setScanMode('SEARCH_PALETTE');
+      setCameraVisible(true);
+  };
+
   const confirmReception = async () => {
     if (!selectedPalette || !scannedEmplacement || !user) return;
 
@@ -170,7 +216,6 @@ const ReceptionPaletteScreen = () => {
     setIsProcessing(true);
 
     try {
-        // Call Reception API
         await receptionnerPalette({
             paletteId: selectedPalette.id,
             magasinDestinationId: scannedEmplacement.magasinId!,
@@ -178,7 +223,6 @@ const ReceptionPaletteScreen = () => {
             creationUser: user.name
         });
 
-        // Success
         setTimeout(() => {
             showResult('success', 'Réception Réussie', `Palette réceptionnée à l'emplacement ${scannedEmplacement.designation}.`);
         }, 500);
@@ -252,11 +296,13 @@ const ReceptionPaletteScreen = () => {
       outputRange: [0, SCAN_SIZE],
     });
 
+    const instructionText = scanMode === 'SEARCH_PALETTE' ? 'Scannez le QR Code de la Palette' : 'Scannez le code emplacement';
+
     return (
       <View style={{ flex: 1, backgroundColor: 'black' }}>
         <CameraView
           style={StyleSheet.absoluteFillObject}
-          onBarcodeScanned={isProcessing ? undefined : handleEmplacementScanned}
+          onBarcodeScanned={isProcessing ? undefined : handleCameraScan}
           enableTorch={torchEnabled}
           barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
         />
@@ -275,7 +321,9 @@ const ReceptionPaletteScreen = () => {
             <View style={localStyles.overlaySide} />
           </View>
           <View style={localStyles.overlayBottom}>
-            <Text style={localStyles.scanInstruction}>Scannez le code emplacement</Text>
+            <View style={{backgroundColor: 'rgba(0,0,0,0.6)', padding: 10, borderRadius: 8, marginBottom: 20}}>
+                <Text style={localStyles.scanInstruction}>{instructionText}</Text>
+            </View>
             <View style={localStyles.cameraControls}>
               <TouchableOpacity
                 style={[localStyles.iconButton, torchEnabled && localStyles.iconButtonActive]}
@@ -285,7 +333,10 @@ const ReceptionPaletteScreen = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[localStyles.iconButton, localStyles.closeButton]}
-                onPress={() => setCameraVisible(false)}
+                onPress={() => {
+                    setCameraVisible(false);
+                    setScanMode('NONE');
+                }}
               >
                 <Ionicons name="close" size={32} color="white" />
               </TouchableOpacity>
@@ -363,7 +414,7 @@ const ReceptionPaletteScreen = () => {
                 <TouchableOpacity style={[localStyles.modalButton, localStyles.cancelBtn]} onPress={() => setSelectedPalette(null)}>
                   <Text style={localStyles.cancelBtnText}>ANNULER</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[localStyles.modalButton, localStyles.confirmBtn]} onPress={() => setCameraVisible(true)}>
+                <TouchableOpacity style={[localStyles.modalButton, localStyles.confirmBtn]} onPress={startScanEmplacement}>
                   <Text style={localStyles.confirmBtnText}>SCANNER EMPLACEMENT</Text>
                 </TouchableOpacity>
             </View>
@@ -432,9 +483,17 @@ const ReceptionPaletteScreen = () => {
 
       <View style={localStyles.listHeader}>
         <Text style={localStyles.listTitle}>En Transit</Text>
-        <TouchableOpacity onPress={fetchTransitPalettes}>
-            <Ionicons name="refresh" size={20} color={Colors.primary} />
-        </TouchableOpacity>
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+             {/* SEARCH BUTTON */}
+            <TouchableOpacity onPress={startSearchPalette} style={localStyles.searchButton}>
+                <Ionicons name="scan-circle" size={24} color={Colors.primary} />
+                <Text style={localStyles.searchButtonText}>Rechercher</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={fetchTransitPalettes} style={{marginLeft: 15}}>
+                <Ionicons name="refresh" size={24} color={Colors.primary} />
+            </TouchableOpacity>
+        </View>
       </View>
 
       <ListContent />
@@ -458,7 +517,7 @@ const localStyles = StyleSheet.create({
   bottomLeft: { bottom: 0, left: 0, borderTopWidth: 0, borderRightWidth: 0 },
   bottomRight: { bottom: 0, right: 0, borderTopWidth: 0, borderLeftWidth: 0 },
 
-  scanInstruction: { color: 'white', fontSize: 16, marginBottom: 40, fontWeight: '600', letterSpacing: 0.5 },
+  scanInstruction: { color: 'white', fontSize: 16, marginBottom: 10, fontWeight: '600', letterSpacing: 0.5 },
   cameraControls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', width: '100%', paddingBottom: 40 },
   iconButton: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginHorizontal: 15 },
   iconButtonActive: { backgroundColor: Colors.primary },
@@ -471,6 +530,9 @@ const localStyles = StyleSheet.create({
 
   listHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10, marginTop: 15 },
   listTitle: { fontSize: 16, fontWeight: '700', color: '#444', textTransform: 'uppercase' },
+
+  searchButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0F4F8', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
+  searchButtonText: { color: Colors.primary, fontWeight: '600', marginLeft: 5, fontSize: 13 },
 
   itemContainer: { backgroundColor: 'white', marginHorizontal: 20, marginBottom: 12, borderRadius: 8, padding: 15, borderLeftWidth: 5, borderLeftColor: Colors.primary, elevation: 2 },
   itemHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, paddingBottom: 5, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
