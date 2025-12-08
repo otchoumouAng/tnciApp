@@ -177,6 +177,7 @@ const ReceptionPaletteScreen = () => {
             <Text style={localStyles.itemTitle}>{item.numero}</Text>
         </View>
         <View style={localStyles.itemBody}>
+            <Text style={localStyles.itemText}><Text style={localStyles.bold}>N° Fabrication:</Text> {item.numeroProduction}</Text>
             <Text style={localStyles.itemText}><Text style={localStyles.bold}>Article:</Text> {item.nomArticle}</Text>
             <Text style={localStyles.itemText}><Text style={localStyles.bold}>Produit:</Text> {item.produitDesignation}</Text>
             <Text style={localStyles.dateText}>{item.dateDeclaration ? new Date(item.dateDeclaration).toLocaleDateString() + ' ' + new Date(item.dateDeclaration).toLocaleTimeString() : 'N/A'}</Text>
@@ -315,15 +316,18 @@ const ReceptionPaletteScreen = () => {
           <View style={localStyles.modalContent}>
             <View style={localStyles.modalHeader}>
               <Ionicons name="information-circle" size={50} color={Colors.primary} />
-              <Text style={localStyles.modalTitle}>Réceptionner Palette</Text>
+              <Text style={localStyles.modalTitle}>Déposer Palette</Text>
             </View>
 
             {selectedPalette && (
               <View style={localStyles.modalDetails}>
+                 <Text style={localStyles.detailRow}><Text style={localStyles.bold}>N° Fabrication:</Text> {selectedPalette.numeroProduction}</Text>
                  <Text style={localStyles.detailRow}><Text style={localStyles.bold}>Palette N°:</Text> {selectedPalette.numero}</Text>
-                 <Text style={localStyles.detailRow}><Text style={localStyles.bold}>Article:</Text> {selectedPalette.nomArticle}</Text>
                  <Text style={localStyles.detailRow}><Text style={localStyles.bold}>Produit:</Text> {selectedPalette.produitDesignation}</Text>
-                 <Text style={localStyles.detailRow}><Text style={localStyles.bold}>Poids Net:</Text> {selectedPalette.poidsNetPalette} kg</Text>
+                 <Text style={localStyles.detailRow}><Text style={localStyles.bold}>Type Produit:</Text> {selectedPalette.typeProduitDesignation}</Text>
+                 <Text style={localStyles.detailRow}><Text style={localStyles.bold}>Date/Heure:</Text> {selectedPalette.modificationDate}</Text>
+                 <Text style={localStyles.detailRow}><Text style={localStyles.bold}>Magasin Depart:</Text> {selectedPalette.stockMagasin}</Text>
+                 <Text style={localStyles.detailRow}><Text style={localStyles.bold}>Emplacement Depart:</Text> {selectedPalette.stockEmplacement}</Text>
               </View>
             )}
 
@@ -354,8 +358,8 @@ const ReceptionPaletteScreen = () => {
       </Modal>
 
       <View style={localStyles.headerContainer}>
-        <Text style={localStyles.headerTitle}>Réception Palette</Text>
-        <Text style={localStyles.headerSubtitle}>Sélectionnez une palette à réceptionner</Text>
+        <Text style={localStyles.headerTitle}>Dépose Palette</Text>
+        <Text style={localStyles.headerSubtitle}>Sélectionnez la palette à déposer</Text>
       </View>
 
       <View style={localStyles.listHeader}>
