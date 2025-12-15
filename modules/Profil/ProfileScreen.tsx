@@ -1,119 +1,339 @@
 import React, { useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  ScrollView, 
+  ActivityIndicator, 
+  ImageBackground, 
+  SafeAreaView, 
+  StatusBar,
+  Dimensions
+} from 'react-native';
 import { AuthContext } from '../../contexts/AuthContext';
-import { Spacing, Styles, Typography, Colors } from '../../styles/style';
-import { UserCircle, At, Briefcase, MapPinLine, Storefront, SignOut } from 'phosphor-react-native';
+// On garde les imports de base pour la logique
+import { Spacing, Styles, Colors } from '../../styles/style';
+import { UserCircle, At, Briefcase, MapPinLine, Storefront, SignOut, CaretRight, ShieldCheck } from 'phosphor-react-native';
+// On réutilise la même image de fond pour la cohérence
+import BackgroundImage from '../../assets/background.png';
 
-// Composant réutilisable pour afficher une ligne d'information avec une icône
-const InfoRow = ({ icon, label, value }: { icon: React.ReactNode, label: string, value?: string | null }) => {
-    if (!value) return null; // Ne rien afficher si la valeur est absente
+// --- COMPOSANTS UI REUTILISABLES POUR CE SCREEN ---
+
+// Une ligne d'info stylisée "Premium"
+const InfoRow = ({ icon, label, value, isLast }: { icon: React.ReactNode, label: string, value?: string | null, isLast?: boolean }) => {
+    if (!value) return null;
 
     return (
-        <View style={localStyles.infoRow}>
-            <View style={localStyles.infoIcon}>
+        <View style={[DesignStyles.infoRow, !isLast && DesignStyles.infoRowBorder]}>
+            {/* Icône dans une bulle subtile */}
+            <View style={DesignStyles.iconContainer}>
                 {icon}
             </View>
-            <View style={localStyles.infoTextContainer}>
-                <Text style={localStyles.infoLabel}>{label}</Text>
-                <Text style={localStyles.infoValue}>{value}</Text>
+            
+            <View style={DesignStyles.infoContent}>
+                <Text style={DesignStyles.infoLabel}>{label}</Text>
+                <Text style={DesignStyles.infoValue}>{value}</Text>
             </View>
         </View>
     );
 };
 
+// Séparateur de section visuel
+const SectionHeader = ({ title }: { title: string }) => (
+    <View style={DesignStyles.sectionHeader}>
+        <Text style={DesignStyles.sectionTitle}>{title}</Text>
+    </View>
+);
+
 export default function ProfileScreen() {
   const { user, logout, isLoading } = useContext(AuthContext);
 
   if (isLoading) {
-    return <ActivityIndicator style={Styles.loader} size="large" color={Colors.primary} />;
+    return (
+        <View style={[DesignStyles.centerContainer, { backgroundColor: '#F8FAFC' }]}>
+            <ActivityIndicator size="large" color="#4F46E5" />
+        </View>
+    );
   }
 
   if (!user) {
     return (
-      <View style={[Styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={Typography.body}>Utilisateur non trouvé.</Text>
+      <View style={DesignStyles.centerContainer}>
+        <Text style={DesignStyles.errorText}>Utilisateur non trouvé.</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={Styles.container} contentContainerStyle={{ padding: Spacing.lg }}>
-      <View style={localStyles.headerContainer}>
-        <UserCircle size={80} color={Colors.primary} weight="light" />
-        <Text style={[Typography.h2, { marginTop: Spacing.md }]}>{user.name}</Text>
-        <Text style={[Typography.body, { color: Colors.darkGray }]}>@{user.userName}</Text>
-      </View>
+    <ImageBackground 
+      source={BackgroundImage} 
+      resizeMode="cover" 
+      style={DesignStyles.background}
+    >
+        {/* Overlay pour unifier avec le HomeScreen */}
+        <View style={DesignStyles.overlay}>
+            <SafeAreaView style={{ flex: 1 }}>
+                <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+                
+                <ScrollView 
+                    contentContainerStyle={{ paddingBottom: Spacing.xl }}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* --- HERO SECTION (Avatar) --- */}
+                    <View style={DesignStyles.headerContainer}>
+                        <View style={DesignStyles.avatarWrapper}>
+                            <View style={DesignStyles.avatarShadow}>
+                                <UserCircle size={100} color="#4F46E5" weight="light" />
+                            </View>
+                            <View style={DesignStyles.statusBadge}>
+                                <ShieldCheck size={16} color="#FFFFFF" weight="fill" />
+                            </View>
+                        </View>
+                        
+                        <Text style={DesignStyles.userName}>{user.name}</Text>
+                        <Text style={DesignStyles.userHandle}>@{user.userName}</Text>
+                        
+                        {/* Petit badge de rôle style "chip" */}
+                        <View style={DesignStyles.roleBadge}>
+                            <Text style={DesignStyles.roleText}>{user.functionName || "Collaborateur"}</Text>
+                        </View>
+                    </View>
       
-      <View style={[Styles.card, { marginTop: Spacing.lg }]}>
-        <Text style={localStyles.cardTitle}>Informations Professionnelles</Text>
-        <InfoRow icon={<Briefcase size={24} color={Colors.primary} />} label="Fonction" value={user.functionName} />
-        <InfoRow icon={<MapPinLine size={24} color={Colors.primary} />} label="Site de travail" value={user.locationName} />
-        <InfoRow icon={<Storefront size={24} color={Colors.primary} />} label="Magasin par défaut" value={user.magasinNom} />
-      </View>
+                    {/* --- CONTENU --- */}
+                    <View style={DesignStyles.contentContainer}>
+                        
+                        {/* Carte Infos Pro */}
+                        <View style={DesignStyles.card}>
+                            <SectionHeader title="Informations Professionnelles" />
+                            <InfoRow 
+                                icon={<Briefcase size={22} color="#4F46E5" weight="duotone" />} 
+                                label="Fonction" 
+                                value={user.functionName} 
+                            />
+                            <InfoRow 
+                                icon={<MapPinLine size={22} color="#F59E0B" weight="duotone" />} 
+                                label="Site de travail" 
+                                value={user.locationName} 
+                            />
+                            <InfoRow 
+                                icon={<Storefront size={22} color="#10B981" weight="duotone" />} 
+                                label="Magasin par défaut" 
+                                value={user.magasinNom} 
+                                isLast
+                            />
+                        </View>
 
-      <View style={[Styles.card, { marginTop: Spacing.lg }]}>
-        <Text style={localStyles.cardTitle}>Contact</Text>
-        <InfoRow icon={<At size={24} color={Colors.primary} />} label="Email" value={user.email} />
-        {/* Vous pouvez ajouter d'autres champs de contact ici si nécessaire */}
-      </View>
-      
-      <TouchableOpacity
-        style={[Styles.buttonSecondary, localStyles.logoutButton]}
-        onPress={logout}
-        accessibilityLabel="Se déconnecter"
-      >
-        <SignOut size={20} color={Colors.error} />
-        <Text style={[Styles.textButton, localStyles.logoutButtonText]}>Se déconnecter</Text>
-      </TouchableOpacity>
-    </ScrollView>
+                        {/* Carte Contact */}
+                        <View style={DesignStyles.card}>
+                            <SectionHeader title="Coordonnées" />
+                            <InfoRow 
+                                icon={<At size={22} color="#EC4899" weight="duotone" />} 
+                                label="Email professionnel" 
+                                value={user.email} 
+                                isLast
+                            />
+                        </View>
+                        
+                        {/* Bouton Déconnexion - Design "Danger Zone" mais propre */}
+                        <TouchableOpacity
+                            style={DesignStyles.logoutButton}
+                            onPress={logout}
+                            activeOpacity={0.8}
+                            accessibilityLabel="Se déconnecter"
+                        >
+                            <View style={DesignStyles.logoutIconWrapper}>
+                                <SignOut size={20} color="#EF4444" weight="bold" />
+                            </View>
+                            <Text style={DesignStyles.logoutText}>Se déconnecter</Text>
+                            <CaretRight size={16} color="#EF4444" weight="bold" />
+                        </TouchableOpacity>
+
+                        <Text style={DesignStyles.versionText}>Version 1.0.2</Text>
+                    </View>
+                </ScrollView>
+            </SafeAreaView>
+        </View>
+    </ImageBackground>
   );
 }
 
-const localStyles = StyleSheet.create({
+// --- STYLE GOD TIER ---
+const DesignStyles = StyleSheet.create({
+    background: {
+        flex: 1,
+        width: '100%',
+    },
+    overlay: {
+        flex: 1,
+        // Même fond "Ice White" que l'accueil pour la transition fluide
+        backgroundColor: 'rgba(248, 250, 252, 0.95)', 
+    },
+    centerContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    errorText: {
+        fontSize: 16,
+        color: '#64748B',
+    },
+
+    // --- HEADER ---
     headerContainer: {
         alignItems: 'center',
-        marginBottom: Spacing.lg,
+        paddingTop: Spacing.xl,
+        paddingBottom: Spacing.lg,
     },
-    cardTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: Colors.dark,
+    avatarWrapper: {
         marginBottom: Spacing.md,
-        paddingBottom: Spacing.sm,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.lightGray,
+        position: 'relative',
     },
+    avatarShadow: {
+        // Effet de profondeur sous l'avatar
+        shadowColor: "#4F46E5",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.2,
+        shadowRadius: 20,
+        elevation: 10,
+        backgroundColor: '#fff',
+        borderRadius: 100,
+        padding: 4, // Bordure blanche autour de l'icone
+    },
+    statusBadge: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        backgroundColor: '#10B981', // Vert connecté
+        borderRadius: 12,
+        width: 28,
+        height: 28,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 3,
+        borderColor: '#F8FAFC', // Couleur du fond pour détacher le badge
+    },
+    userName: {
+        fontSize: 26,
+        fontWeight: '800',
+        color: '#1E293B',
+        marginBottom: 2,
+    },
+    userHandle: {
+        fontSize: 14,
+        color: '#64748B',
+        fontWeight: '500',
+        marginBottom: Spacing.md,
+    },
+    roleBadge: {
+        backgroundColor: '#EEF2FF', // Indigo très clair
+        paddingHorizontal: 16,
+        paddingVertical: 6,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#E0E7FF',
+    },
+    roleText: {
+        color: '#4F46E5',
+        fontWeight: '700',
+        fontSize: 12,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+
+    // --- CONTENU ---
+    contentContainer: {
+        paddingHorizontal: Spacing.lg,
+    },
+    card: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
+        padding: Spacing.lg,
+        marginBottom: Spacing.lg,
+        // Ombres sophistiquées
+        shadowColor: "#64748B",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+        elevation: 3,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+    },
+    sectionHeader: {
+        marginBottom: Spacing.md,
+    },
+    sectionTitle: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#94A3B8',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+
+    // --- INFO ROW ---
     infoRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: Spacing.md,
+        paddingVertical: 12,
     },
-    infoIcon: {
+    infoRowBorder: {
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+    },
+    iconContainer: {
+        width: 44,
+        height: 44,
+        borderRadius: 14,
+        backgroundColor: '#F8FAFC', // Gris très clair
+        justifyContent: 'center',
+        alignItems: 'center',
         marginRight: Spacing.md,
     },
-    infoTextContainer: {
+    infoContent: {
         flex: 1,
     },
     infoLabel: {
         fontSize: 12,
-        color: Colors.darkGray,
+        color: '#64748B',
+        marginBottom: 2,
     },
     infoValue: {
-        fontSize: 16,
-        color: Colors.dark,
-        fontWeight: '500',
+        fontSize: 15,
+        color: '#0F172A',
+        fontWeight: '600',
     },
+
+    // --- LOGOUT BUTTON ---
     logoutButton: {
-        marginTop: Spacing.xl,
+        backgroundColor: '#FEF2F2', // Rouge très clair
+        borderRadius: 16,
+        padding: Spacing.md,
         flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#FEE2E2',
+        marginBottom: Spacing.xl,
+    },
+    logoutIconWrapper: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        backgroundColor: '#FFFFFF',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 0, 0, 0.1)',
-        borderColor: Colors.error,
-        borderWidth: 1,
+        marginRight: Spacing.md,
     },
-    logoutButtonText: {
-        color: Colors.error,
-        marginLeft: Spacing.sm,
+    logoutText: {
+        flex: 1,
+        color: '#EF4444',
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    versionText: {
+        textAlign: 'center',
+        color: '#CBD5E1',
+        fontSize: 11,
+        marginTop: -Spacing.md, // Remonte un peu
+        marginBottom: Spacing.xl,
     }
 });

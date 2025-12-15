@@ -2,27 +2,28 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
   View,
   Text,
-  Button,
-  FlatList,
   StyleSheet,
   ActivityIndicator,
   Modal,
   TouchableOpacity,
   Animated,
   Easing,
-  Dimensions
+  Dimensions,
+  StatusBar,
+  ScrollView
 } from 'react-native';
-import { Palette } from './type';
-import { getPalettesEnTransit, getPaletteById, deplacerPalette } from './routes';
+import { Palette, OperationType } from './type';
+import { getPaletteById, deplacerPalette, getOperationTypes } from './routes';
 import { Styles, Colors } from '../../styles/style';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../../contexts/AuthContext';
+import { Picker } from '@react-native-picker/picker';
 
 const { width } = Dimensions.get('window');
 const SCAN_SIZE = width * 0.7;
 
-// Couleurs Industrielles Spécifiques pour les statuts (copied from DeclarationPalette)
+// Couleurs et Thèmes
 const STATUS_COLORS = {
   success: '#2E7D32',
   warning: '#FFA000',
@@ -31,17 +32,23 @@ const STATUS_COLORS = {
 
 const DeplacerPaletteScreen = () => {
   const { user } = useContext(AuthContext);
-  const [transitPalettes, setTransitPalettes] = useState<Palette[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
   const [isCameraVisible, setCameraVisible] = useState<boolean>(false);
   const [scannedPalette, setScannedPalette] = useState<Palette | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [isValidationLoading, setValidationLoading] = useState<boolean>(false);
 
+  // Operation Types State
+  const [operationTypes, setOperationTypes] = useState<OperationType[]>([]);
+  const [selectedOperationTypeId, setSelectedOperationTypeId] = useState<number>(1);
+  const [isOperationTypesLoading, setIsOperationTypesLoading] = useState<boolean>(false);
+
   // UX Camera States
   const [torchEnabled, setTorchEnabled] = useState<boolean>(false);
   const scanAnim = useRef(new Animated.Value(0)).current;
+  
+  // UX Home Button Animation (Pulse)
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // UX Result Modal State
   const [resultModal, setResultModal] = useState<{
@@ -56,53 +63,74 @@ const DeplacerPaletteScreen = () => {
     message: ''
   });
 
-  const fetchTransitPalettes = async () => {
-    if (!user) return; // Should not happen if protected
-    setLoading(true);
-    setError(null);
+  useEffect(() => {
+    fetchOperationTypes();
+  }, []);
+
+  const fetchOperationTypes = async () => {
+    setIsOperationTypesLoading(true);
     try {
-      const palettes = await getPalettesEnTransit(user.id);
-      setTransitPalettes(palettes);
+        const types = await getOperationTypes();
+        setOperationTypes(types);
+        // Ensure "Transfert" (ID 1) is selected by default, or the first one if not present
+        const defaultOp = types.find(t => t.id === 1) || types[0];
+        if (defaultOp) {
+            setSelectedOperationTypeId(defaultOp.id);
+        }
     } catch (error) {
-      console.error("Failed to fetch transit palettes:", error);
-      setError("Impossible de charger la liste des palettes en transit.");
-      setTransitPalettes([]);
+        console.error("Failed to fetch operation types", error);
+        // Fallback hardcoded if API fails, though routes.ts might throw.
+        // If routes throws, we might want to just handle it gracefully or retry.
+        // For now, let's keep the default ID 1.
     } finally {
-      setLoading(false);
+        setIsOperationTypesLoading(false);
     }
   };
 
+  // Animation de pulsation du bouton principal
   useEffect(() => {
-    fetchTransitPalettes();
-  }, []);
+    if (!isCameraVisible) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.05,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+  }, [isCameraVisible]);
 
+  // Animation du laser scanner
   useEffect(() => {
     if (isCameraVisible) {
-      startScanAnimation();
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(scanAnim, {
+            toValue: 1,
+            duration: 2000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scanAnim, {
+            toValue: 0,
+            duration: 2000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          })
+        ])
+      ).start();
     } else {
       scanAnim.setValue(0);
       setTorchEnabled(false);
     }
   }, [isCameraVisible]);
-
-  const startScanAnimation = () => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(scanAnim, {
-          toValue: 1,
-          duration: 2000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(scanAnim, {
-          toValue: 0,
-          duration: 2000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        })
-      ])
-    ).start();
-  };
 
   const showResult = (type: 'success' | 'warning' | 'error', title: string, message: string) => {
     setResultModal({ visible: true, type, title, message });
@@ -123,11 +151,7 @@ const DeplacerPaletteScreen = () => {
         setScannedPalette(palette);
       }
     } catch (error) {
-      showResult(
-        'error',
-        'Scan Échoué',
-        "Une erreur est survenue lors de la récupération de la palette."
-      );
+      showResult('error', 'Erreur Scan', "Impossible de récupérer les infos de la palette.");
     } finally {
       setLoading(false);
     }
@@ -140,20 +164,20 @@ const DeplacerPaletteScreen = () => {
     try {
       await deplacerPalette({
         paletteId: scannedPalette.id,
-        typeOperationID: 1, // Hardcoded as per requirements
-        creationUser: user.name, // Assuming user.name is correct from AuthContext
-        description: "Départ vers zone de transit" // Hardcoded as per requirements
+        typeOperationID: selectedOperationTypeId,
+        creationUser: user.name,
+        description: "Départ vers zone de transit"
       });
 
-      await fetchTransitPalettes();
-
+      // On ferme d'abord le détail
       setScannedPalette(null);
 
+      // Puis on affiche le succès
       setTimeout(() => {
         showResult(
           'success',
-          'Déplacement Réussi',
-          `Palette ${scannedPalette.numero} mise en transit avec succès.`
+          'Succès',
+          `Palette ${scannedPalette.numero} en transit.`
         );
       }, 300);
 
@@ -165,11 +189,11 @@ const DeplacerPaletteScreen = () => {
 
       if (finalMessage.toLowerCase().includes("déjà en cours de transit")) {
         setTimeout(() => {
-          showResult('warning', 'Déjà en Transit', "Cette palette est déjà en cours de transit (Transfert non réceptionné).");
+          showResult('warning', 'Déjà parti', "Cette palette est déjà en transit.");
         }, 300);
       } else {
         setTimeout(() => {
-          showResult('error', 'Échec Déplacement', finalMessage);
+          showResult('error', 'Échec', finalMessage);
         }, 300);
       }
     } finally {
@@ -181,53 +205,23 @@ const DeplacerPaletteScreen = () => {
     setScannedPalette(null);
   };
 
-  const renderItem = ({ item }: { item: Palette }) => (
-    <View style={localStyles.itemContainer}>
-      <View style={localStyles.itemHeader}>
-        <Ionicons name="cube-outline" size={24} color={Colors.primary} />
-        <Text style={localStyles.itemTitle}>{item.numero}</Text>
-      </View>
-      <View style={localStyles.itemBody}>
-        <Text style={localStyles.itemText}><Text style={localStyles.bold}>Article:</Text> {item.nomArticle}</Text>
-        <Text style={localStyles.itemText}><Text style={localStyles.bold}>Produit:</Text> {item.produitDesignation}</Text>
-         {/* Assuming dateDeclaration is relevant, or we might want date of movement if available in Palette, but using dateDeclaration for now as history */}
-        <Text style={localStyles.dateText}>{item.dateDeclaration ? new Date(item.dateDeclaration).toLocaleDateString() + ' ' + new Date(item.dateDeclaration).toLocaleTimeString() : 'N/A'}</Text>
-      </View>
-    </View>
-  );
-
-  const ListContent = () => {
-    if (loading) return <ActivityIndicator size="large" color={Colors.primary} style={Styles.loader} />;
-    if (error) return <Text style={Styles.errorText}>{error}</Text>;
-    return (
-      <FlatList
-        data={transitPalettes}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={
-          <View style={localStyles.emptyContainer}>
-            <Ionicons name="albums-outline" size={48} color="#ccc" />
-            <Text style={Styles.emptyText}>Aucune palette en transit.</Text>
-          </View>
-        }
-        contentContainerStyle={Styles.list}
-        onRefresh={fetchTransitPalettes}
-        refreshing={loading}
-      />
-    );
-  };
-
-  if (!permission) return <View />;
+  // --- RENDU PERMISSION ---
+  if (!permission) return <View style={Styles.container} />;
   if (!permission.granted) {
     return (
-      <View style={Styles.container}>
-        <Text style={{ textAlign: 'center', marginBottom: 20 }}>Accès caméra requis pour scanner les palettes.</Text>
-        <Button onPress={requestPermission} title="Autoriser la caméra" />
+      <View style={[Styles.container, { justifyContent: 'center', padding: 20 }]}>
+        <Ionicons name="camera-off-outline" size={60} color="#ccc" style={{ alignSelf: 'center', marginBottom: 20 }} />
+        <Text style={{ textAlign: 'center', marginBottom: 20, fontSize: 16, color: '#555' }}>
+          L'accès à la caméra est nécessaire pour le scan.
+        </Text>
+        <TouchableOpacity onPress={requestPermission} style={{backgroundColor: Colors.primary, padding: 15, borderRadius: 10}}>
+             <Text style={{color: 'white', fontWeight: 'bold'}}>Autoriser la caméra</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
-  // --- RENDU DE LA CAMÉRA MODERNE (Copied from DeclarationPalette) ---
+  // --- RENDU CAMERA (MODE SCAN) ---
   if (isCameraVisible) {
     const laserTranslateY = scanAnim.interpolate({
       inputRange: [0, 1],
@@ -236,6 +230,7 @@ const DeplacerPaletteScreen = () => {
 
     return (
       <View style={{ flex: 1, backgroundColor: 'black' }}>
+        <StatusBar hidden />
         <CameraView
           style={StyleSheet.absoluteFillObject}
           onBarcodeScanned={scannedPalette || resultModal.visible ? undefined : handleBarCodeScanned}
@@ -244,7 +239,12 @@ const DeplacerPaletteScreen = () => {
         />
 
         <View style={localStyles.overlay}>
-          <View style={localStyles.overlayTop} />
+          <View style={localStyles.overlayTop}>
+             <TouchableOpacity style={localStyles.topCloseButton} onPress={() => setCameraVisible(false)}>
+                <Ionicons name="close-circle" size={40} color="white" />
+             </TouchableOpacity>
+          </View>
+          
           <View style={localStyles.overlayCenterRow}>
             <View style={localStyles.overlaySide} />
             <View style={localStyles.scanWindow}>
@@ -256,194 +256,292 @@ const DeplacerPaletteScreen = () => {
             </View>
             <View style={localStyles.overlaySide} />
           </View>
+
           <View style={localStyles.overlayBottom}>
-            <Text style={localStyles.scanInstruction}>Visez le QR Code sur la palette</Text>
-            <View style={localStyles.cameraControls}>
-              <TouchableOpacity
-                style={[localStyles.iconButton, torchEnabled && localStyles.iconButtonActive]}
-                onPress={() => setTorchEnabled(!torchEnabled)}
-              >
-                <Ionicons name={torchEnabled ? "flash" : "flash-off"} size={24} color="white" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[localStyles.iconButton, localStyles.closeButton]}
-                onPress={() => setCameraVisible(false)}
-              >
-                <Ionicons name="close" size={32} color="white" />
-              </TouchableOpacity>
-            </View>
+            <Text style={localStyles.scanInstruction}>Scannez le QR Code Palette</Text>
+            <TouchableOpacity
+              style={[localStyles.flashButton, torchEnabled && localStyles.flashButtonActive]}
+              onPress={() => setTorchEnabled(!torchEnabled)}
+            >
+              <Ionicons name={torchEnabled ? "flash" : "flash-off"} size={24} color={torchEnabled ? Colors.primary : "white"} />
+              <Text style={{color: 'white', marginTop: 5, fontSize: 12}}>Lampe</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
     );
   }
 
+  // --- RENDU PRINCIPAL (MODE STANDBY ULTRA MODERNE) ---
   return (
-    <View style={Styles.container}>
+    <View style={localStyles.mainContainer}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F5F7FA" />
 
-      {/* --- MODAL DE RÉSULTAT --- */}
+      {/* --- HEADER --- */}
+      <View style={localStyles.modernHeader}>
+        <View>
+          <Text style={localStyles.modernTitle}>Enlever Une Palette</Text>
+          <Text style={localStyles.modernSubtitle}>Deplacer vers un autre emplacement</Text>
+        </View>
+        <View style={localStyles.headerIconBg}>
+           <Ionicons name="cube" size={24} color={Colors.primary} />
+        </View>
+      </View>
+
+      {/* --- BODY CENTRAL --- */}
+      <View style={localStyles.centerContent}>
+        {loading ? (
+          <ActivityIndicator size="large" color={Colors.primary} />
+        ) : (
+          <TouchableOpacity 
+            activeOpacity={0.8}
+            onPress={() => setCameraVisible(true)}
+            style={{ alignItems: 'center' }}
+          >
+            <Animated.View style={[localStyles.scanTriggerCircle, { transform: [{ scale: pulseAnim }] }]}>
+              <Ionicons name="qr-code" size={60} color="white" />
+            </Animated.View>
+            <Text style={localStyles.triggerText}>APPUYER POUR SCANNER</Text>
+            <Text style={localStyles.triggerSubText}>Déplacer vers zone de transit</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* --- FOOTER INFO --- */}
+      <View style={localStyles.footerInfo}>
+        <Ionicons name="information-circle-outline" size={20} color="#999" />
+        <Text style={localStyles.footerText}>
+          Assurez-vous que la palette est prête physiquement avant de valider le scan.
+        </Text>
+      </View>
+
+      {/* --- MODALS (Code existant conservé pour la logique) --- */}
+      
+      {/* RESULT MODAL */}
       <Modal
         transparent={true}
         visible={resultModal.visible}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={closeResult}
       >
         <View style={localStyles.modalOverlay}>
-          <View style={[localStyles.resultModalContent, { borderTopColor: STATUS_COLORS[resultModal.type] }]}>
-            <View style={[localStyles.resultIconContainer, { backgroundColor: STATUS_COLORS[resultModal.type] }]}>
-              <Ionicons
-                name={
-                  resultModal.type === 'success' ? 'checkmark-done' :
-                  resultModal.type === 'warning' ? 'warning' : 'alert'
-                }
-                size={40}
-                color="white"
-              />
+          <View style={[localStyles.resultCard, { borderLeftColor: STATUS_COLORS[resultModal.type] }]}>
+            <View style={[localStyles.resultIconBubble, { backgroundColor: STATUS_COLORS[resultModal.type] + '20' }]}>
+               <Ionicons 
+                 name={resultModal.type === 'success' ? 'checkmark' : 'alert'} 
+                 size={32} 
+                 color={STATUS_COLORS[resultModal.type]} 
+               />
             </View>
-            <Text style={[localStyles.resultTitle, { color: STATUS_COLORS[resultModal.type] }]}>
-              {resultModal.title}
-            </Text>
-            <Text style={localStyles.resultMessage}>{resultModal.message}</Text>
-
-            <TouchableOpacity
-              style={[localStyles.resultButton, { backgroundColor: STATUS_COLORS[resultModal.type] }]}
+            <Text style={localStyles.resultCardTitle}>{resultModal.title}</Text>
+            <Text style={localStyles.resultCardMessage}>{resultModal.message}</Text>
+            <TouchableOpacity 
+              style={[localStyles.resultCardButton, { backgroundColor: STATUS_COLORS[resultModal.type] }]}
               onPress={closeResult}
             >
-              <Text style={localStyles.resultButtonText}>COMPRIS</Text>
+              <Text style={localStyles.resultCardButtonText}>OK</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* --- MODAL DE CONFIRMATION --- */}
+      {/* CONFIRMATION MODAL */}
       <Modal
         transparent={true}
         visible={!!scannedPalette}
-        animationType="fade"
+        animationType="slide"
         onRequestClose={handleCancelValidation}
       >
         <View style={localStyles.modalOverlay}>
-          <View style={localStyles.modalContent}>
-            <View style={localStyles.modalHeader}>
-              <Ionicons name="scan-circle" size={50} color={Colors.primary} />
-              <Text style={localStyles.modalTitle}>Confirmer Déplacement</Text>
+          <View style={localStyles.confirmCard}>
+            <View style={localStyles.confirmHeader}>
+              <Text style={localStyles.confirmTitle}>Confirmation</Text>
+              <TouchableOpacity onPress={handleCancelValidation}>
+                <Ionicons name="close" size={24} color="#999" />
+              </TouchableOpacity>
             </View>
 
+            <ScrollView>
             {scannedPalette && (
-              <View style={localStyles.modalDetails}>
-                <Text style={localStyles.detailRow}><Text style={localStyles.bold}>N° de fabrication:</Text> {scannedPalette.numeroProduction}</Text>
-                <Text style={localStyles.detailRow}><Text style={localStyles.bold}>Numéro de palette:</Text> {scannedPalette.numero}</Text>
-                <Text style={localStyles.detailRow}><Text style={localStyles.bold}>Produit:</Text> {scannedPalette.produitDesignation}</Text>
-                <Text style={localStyles.detailRow}><Text style={localStyles.bold}>Type de produit:</Text> {scannedPalette.typeProduitDesignation}</Text>
-                <Text style={localStyles.detailRow}><Text style={localStyles.bold}>Article:</Text> {scannedPalette.nomArticle}</Text>
-                <Text style={localStyles.detailRow}><Text style={localStyles.bold}>Code article:</Text> {scannedPalette.codeArticle}</Text>
-              </View>
-            )}
+              <View style={localStyles.confirmBody}>
+                 <View style={localStyles.paletteIdBadge}>
+                    <Text style={localStyles.paletteIdText}>{scannedPalette.numero}</Text>
+                 </View>
+                 
+                 <View style={localStyles.detailGrid}>
+                    <View style={localStyles.detailItem}>
+                        <Text style={localStyles.detailLabel}>Article</Text>
+                        <Text style={localStyles.detailValue} numberOfLines={1}>{scannedPalette.nomArticle}</Text>
+                    </View>
+                    <View style={localStyles.detailItem}>
+                        <Text style={localStyles.detailLabel}>Quantité</Text>
+                        <Text style={localStyles.detailValue}>{scannedPalette.nbreUnite}</Text>
+                    </View>
+                 </View>
 
-            {isValidationLoading ? (
-              <ActivityIndicator size="large" color={Colors.primary} style={{marginVertical: 20}} />
-            ) : (
-              <View style={localStyles.modalButtonContainer}>
-                <TouchableOpacity style={[localStyles.modalButton, localStyles.cancelBtn]} onPress={handleCancelValidation}>
-                  <Text style={localStyles.cancelBtnText}>ANNULER</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[localStyles.modalButton, localStyles.confirmBtn]} onPress={handleValidation}>
-                  <Text style={localStyles.confirmBtnText}>VALIDER</Text>
-                </TouchableOpacity>
+                 {/* --- NEW DETAILS --- */}
+                 <View style={[localStyles.detailGrid, { marginTop: -10 }]}>
+                    <View style={localStyles.detailItem}>
+                        <Text style={localStyles.detailLabel}>N° Production</Text>
+                        <Text style={localStyles.detailValue}>{scannedPalette.numeroProduction}</Text>
+                    </View>
+                 </View>
+                 <View style={[localStyles.detailGrid, { marginTop: -10 }]}>
+                    <View style={localStyles.detailItem}>
+                        <Text style={localStyles.detailLabel}>Produit</Text>
+                        <Text style={localStyles.detailValue}>{scannedPalette.produitDesignation}</Text>
+                    </View>
+                    <View style={localStyles.detailItem}>
+                        <Text style={localStyles.detailLabel}>Type</Text>
+                        <Text style={localStyles.detailValue}>{scannedPalette.typeProduitDesignation}</Text>
+                    </View>
+                 </View>
+
+                 {/* --- OPERATION TYPE SELECTOR (PICKER) --- */}
+                 <View style={localStyles.operationSection}>
+                    <Text style={localStyles.sectionTitle}>Type d'opération</Text>
+                    {isOperationTypesLoading ? (
+                        <ActivityIndicator color={Colors.primary} size="small" />
+                    ) : (
+                        <View style={localStyles.pickerContainer}>
+                            <Picker
+                                selectedValue={selectedOperationTypeId}
+                                onValueChange={(itemValue) => setSelectedOperationTypeId(itemValue)}
+                                style={localStyles.picker}
+                            >
+                                {operationTypes.map((op) => (
+                                    <Picker.Item key={op.id} label={op.designation} value={op.id} />
+                                ))}
+                            </Picker>
+                        </View>
+                    )}
+                 </View>
+
+                 <View style={localStyles.actionWarning}>
+                    <Ionicons name="arrow-forward-circle" size={20} color={Colors.primary} style={{marginRight:8}} />
+                    <Text style={{color: Colors.textDark, fontSize: 13, fontWeight: '600'}}>
+                       Départ vers le Transit
+                    </Text>
+                 </View>
               </View>
             )}
+            </ScrollView>
+
+            <View style={localStyles.confirmFooter}>
+              {isValidationLoading ? (
+                <ActivityIndicator color={Colors.primary} />
+              ) : (
+                <TouchableOpacity style={localStyles.validateButton} onPress={handleValidation}>
+                  <Text style={localStyles.validateButtonText}>VALIDER LE DÉPART</Text>
+                  <Ionicons name="checkmark-circle-outline" size={22} color="white" style={{marginLeft: 8}} />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
       </Modal>
 
-      <View style={localStyles.headerContainer}>
-        <Text style={localStyles.headerTitle}>Déplacer Palette</Text>
-        <Text style={localStyles.headerSubtitle}>Vers magasin de transit</Text>
-      </View>
-
-      <View style={localStyles.actionContainer}>
-        <TouchableOpacity style={localStyles.scanButton} onPress={() => setCameraVisible(true)}>
-          <Ionicons name="qr-code-outline" size={24} color="white" style={{marginRight: 10}} />
-          <Text style={localStyles.scanButtonText}>SCANNER UNE PALETTE À DEPLACER</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={localStyles.listHeader}>
-        <Text style={localStyles.listTitle}>Palettes en transit</Text>
-        <TouchableOpacity onPress={fetchTransitPalettes}>
-            <Ionicons name="refresh" size={20} color={Colors.primary} />
-        </TouchableOpacity>
-      </View>
-
-      <ListContent />
     </View>
   );
 };
 
 const localStyles = StyleSheet.create({
-  // --- STYLES CAMÉRA OVERLAY ---
+  // --- LAYOUT PRINCIPAL ---
+  mainContainer: { flex: 1, backgroundColor: '#F5F7FA', flexDirection: 'column' },
+  modernHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingHorizontal: 25, 
+    paddingTop: 60, 
+    paddingBottom: 20 
+  },
+  modernTitle: { fontSize: 28, fontWeight: '800', color: '#1A202C', letterSpacing: -0.5 },
+  modernSubtitle: { fontSize: 14, color: '#718096', fontWeight: '500', marginTop: 2 },
+  headerIconBg: { 
+    width: 48, height: 48, borderRadius: 14, 
+    backgroundColor: 'white', alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 3
+  },
+
+  centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  scanTriggerCircle: {
+    width: 160, height: 160, borderRadius: 80,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center', alignItems: 'center',
+    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.4, shadowRadius: 20,
+    elevation: 15,
+    marginBottom: 30
+  },
+  triggerText: { fontSize: 18, fontWeight: '800', color: '#2D3748', letterSpacing: 1 },
+  triggerSubText: { fontSize: 14, color: '#A0AEC0', marginTop: 5 },
+
+  footerInfo: { 
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', 
+    padding: 30, paddingBottom: 50, opacity: 0.7 
+  },
+  footerText: { marginLeft: 10, fontSize: 12, color: '#718096', textAlign: 'center', maxWidth: '80%' },
+
+  // --- CAMERA OVERLAY ---
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center' },
-  overlayTop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
+  overlayTop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'flex-end', padding: 20 },
+  topCloseButton: { marginTop: 40 },
   overlayCenterRow: { flexDirection: 'row', height: SCAN_SIZE },
   overlaySide: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
-  scanWindow: { width: SCAN_SIZE, height: SCAN_SIZE, position: 'relative', overflow: 'hidden' },
-  overlayBottom: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', paddingTop: 30 },
-
-  laser: { width: '100%', height: 2, backgroundColor: Colors.primary, shadowColor: Colors.primary, shadowOpacity: 1, shadowRadius: 10 },
-  corner: { position: 'absolute', width: 30, height: 30, borderColor: Colors.primary, borderWidth: 5 },
+  scanWindow: { width: SCAN_SIZE, height: SCAN_SIZE, position: 'relative', overflow: 'hidden', borderRadius: 20 },
+  overlayBottom: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', paddingTop: 40 },
+  
+  laser: { width: '100%', height: 3, backgroundColor: '#00E676', shadowColor: '#00E676', shadowOpacity: 0.8, shadowRadius: 10 },
+  corner: { position: 'absolute', width: 40, height: 40, borderColor: 'white', borderWidth: 4, borderRadius: 4 },
   topLeft: { top: 0, left: 0, borderBottomWidth: 0, borderRightWidth: 0 },
   topRight: { top: 0, right: 0, borderBottomWidth: 0, borderLeftWidth: 0 },
   bottomLeft: { bottom: 0, left: 0, borderTopWidth: 0, borderRightWidth: 0 },
   bottomRight: { bottom: 0, right: 0, borderTopWidth: 0, borderLeftWidth: 0 },
+  
+  scanInstruction: { color: 'white', fontSize: 16, fontWeight: '600', marginBottom: 30, opacity: 0.9 },
+  flashButton: { alignItems: 'center', justifyContent: 'center', padding: 10 },
+  flashButtonActive: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12 },
 
-  scanInstruction: { color: 'white', fontSize: 16, marginBottom: 40, fontWeight: '600', letterSpacing: 0.5 },
-  cameraControls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', width: '100%', paddingBottom: 40 },
-  iconButton: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginHorizontal: 15 },
-  iconButtonActive: { backgroundColor: Colors.primary },
-  closeButton: { backgroundColor: STATUS_COLORS.error, width: 60, height: 60, borderRadius: 30 },
+  // --- MODAL CARDS MODERN ---
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  
+  // Confirmation Card
+  confirmCard: { width: '100%', maxHeight: '80%', backgroundColor: 'white', borderRadius: 24, overflow: 'hidden' },
+  confirmHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  confirmTitle: { fontSize: 18, fontWeight: 'bold', color: '#2D3748' },
+  confirmBody: { padding: 25 },
+  paletteIdBadge: { alignSelf: 'center', backgroundColor: '#EDF2F7', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8, marginBottom: 20 },
+  paletteIdText: { fontSize: 20, fontWeight: '900', color: '#2D3748', letterSpacing: 1 },
+  
+  detailGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+  detailItem: { flex: 1, backgroundColor: '#FAFAFA', padding: 12, borderRadius: 12, marginRight: 10 },
+  detailLabel: { fontSize: 11, color: '#A0AEC0', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 4 },
+  detailValue: { fontSize: 14, color: '#4A5568', fontWeight: '600' },
 
-  // --- UI PRINCIPALE ---
-  headerContainer: { padding: 20, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#eee' },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', color: Colors.textDark, textTransform: 'uppercase' },
-  headerSubtitle: { fontSize: 13, color: '#666', marginTop: 5, fontWeight: '500' },
+  // Operations
+  operationSection: { marginBottom: 20 },
+  sectionTitle: { fontSize: 14, fontWeight: '700', color: '#2D3748', marginBottom: 10 },
+  pickerContainer: {
+    borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, backgroundColor: '#F0F4F8', overflow: 'hidden'
+  },
+  picker: {
+    height: 50,
+    width: '100%'
+  },
+  
+  actionWarning: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EBF8FF', padding: 15, borderRadius: 12 },
+  
+  confirmFooter: { padding: 20, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
+  validateButton: { backgroundColor: Colors.primary, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 16, borderRadius: 16, shadowColor: Colors.primary, shadowOffset: {width:0,height:4}, shadowOpacity:0.3, shadowRadius:8 },
+  validateButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold', letterSpacing: 0.5 },
 
-  actionContainer: { paddingHorizontal: 20, marginVertical: 15 },
-  scanButton: { flexDirection: 'row', backgroundColor: Colors.primary, padding: 18, borderRadius: 8, justifyContent: 'center', alignItems: 'center', elevation: 4, shadowColor: '#000', shadowOffset: {width:0, height:3}, shadowOpacity: 0.3 },
-  scanButtonText: { color: 'white', fontSize: 14, fontWeight: 'bold', letterSpacing: 1.5, textTransform: 'uppercase' },
-
-  listHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10 },
-  listTitle: { fontSize: 16, fontWeight: '700', color: '#444', textTransform: 'uppercase' },
-
-  itemContainer: { backgroundColor: 'white', marginHorizontal: 20, marginBottom: 12, borderRadius: 8, padding: 15, borderLeftWidth: 5, borderLeftColor: Colors.primary, elevation: 2 },
-  itemHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, paddingBottom: 5, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-  itemTitle: { fontSize: 18, fontWeight: 'bold', marginLeft: 10, color: '#333' },
-  itemBody: { paddingLeft: 0 },
-  itemText: { fontSize: 14, color: '#555', marginBottom: 3 },
-  dateText: { fontSize: 12, color: '#999', marginTop: 6, textAlign: 'right', fontStyle: 'italic' },
-  bold: { fontWeight: '700', color: '#333' },
-  emptyContainer: { alignItems: 'center', marginTop: 60 },
-
-  // --- MODAL DE CONFIRMATION ---
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '90%', backgroundColor: 'white', borderRadius: 12, padding: 0, alignItems: 'center', elevation: 10, overflow: 'hidden' },
-  modalHeader: { width: '100%', alignItems: 'center', padding: 20, backgroundColor: '#f9f9f9', borderBottomWidth: 1, borderBottomColor: '#eee' },
-  modalTitle: { fontSize: 20, fontWeight: '800', color: '#333', marginTop: 10, textTransform: 'uppercase', letterSpacing: 1 },
-  modalDetails: { width: '100%', padding: 20, backgroundColor: 'white' },
-  detailRow: { fontSize: 15, marginBottom: 8, color: '#444', borderBottomWidth: 1, borderBottomColor: '#f0f0f0', paddingBottom: 4 },
-  modalButtonContainer: { flexDirection: 'row', width: '100%', borderTopWidth: 1, borderTopColor: '#eee' },
-  modalButton: { flex: 1, padding: 20, alignItems: 'center', justifyContent: 'center' },
-  cancelBtn: { backgroundColor: '#fff' },
-  cancelBtnText: { color: '#777', fontWeight: 'bold', letterSpacing: 1 },
-  confirmBtn: { backgroundColor: Colors.primary },
-  confirmBtnText: { color: 'white', fontWeight: 'bold', letterSpacing: 1 },
-
-  // --- MODAL DE RÉSULTAT ---
-  resultModalContent: { width: '85%', backgroundColor: 'white', borderRadius: 12, padding: 30, alignItems: 'center', elevation: 10, borderTopWidth: 8 },
-  resultIconContainer: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 20, elevation: 5 },
-  resultTitle: { fontSize: 22, fontWeight: '900', marginBottom: 10, textTransform: 'uppercase', textAlign: 'center' },
-  resultMessage: { fontSize: 16, color: '#666', textAlign: 'center', marginBottom: 25, lineHeight: 22 },
-  resultButton: { paddingVertical: 12, paddingHorizontal: 40, borderRadius: 25, elevation: 3 },
-  resultButtonText: { color: 'white', fontWeight: 'bold', letterSpacing: 1, fontSize: 16 }
+  // Result Card
+  resultCard: { width: '90%', backgroundColor: 'white', borderRadius: 20, padding: 25, alignItems: 'center', borderLeftWidth: 6, elevation: 5 },
+  resultIconBubble: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
+  resultCardTitle: { fontSize: 20, fontWeight: '800', color: '#2D3748', marginBottom: 8 },
+  resultCardMessage: { fontSize: 15, color: '#718096', textAlign: 'center', marginBottom: 20, lineHeight: 22 },
+  resultCardButton: { paddingVertical: 12, paddingHorizontal: 30, borderRadius: 12 },
+  resultCardButtonText: { color: 'white', fontWeight: 'bold' }
 });
 
 export default DeplacerPaletteScreen;

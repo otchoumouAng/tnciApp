@@ -52,6 +52,9 @@ export interface Palette {
   modificationUtilisateur: string;
   desactive: boolean;
   rowVersionKey: string; // byte[] is often serialized as a base64 string
+
+  magasinId?: number; // Added as it was referenced in ReceptionPaletteScreen
+  stockMagasin?: string; // Added as it was referenced in ReceptionPaletteScreen
 }
 
 /**
@@ -67,4 +70,18 @@ export interface PaletteDeplacementRequest {
 export interface PaletteDeplacementResponse {
     message: string;
     transfertID: string;
+}
+
+/**
+ * Represents an Operation Type.
+ */
+export interface OperationType {
+  id: number;
+  designation: string;
+  desactive: boolean;
+  creationUtilisateur?: string | null;
+  creationDate?: string;
+  modificationUtilisateur?: string | null;
+  modificationDate?: string;
+  rowVersionKey?: string | null;
 }

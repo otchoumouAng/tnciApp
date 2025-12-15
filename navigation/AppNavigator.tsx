@@ -21,7 +21,7 @@ function HomeStack() {
       <Stack.Screen 
         name="HomeMain" 
         component={HomeScreen} 
-        options={{ headerTitle: 'Digital Commodity Sourcing' }}
+        options={{ headerTitle: 'Digital Commodity Sourcing' },{ headerShown: false }}
       />
       <Stack.Screen
         name="DeclarationPalette"
@@ -31,12 +31,12 @@ function HomeStack() {
       <Stack.Screen
         name="DeplacerPalette"
         component={DeplacerPaletteScreen}
-        options={{ headerTitle: 'Déplacer Palette' }}
+        options={{ headerTitle: 'Enlever Palette' }}
       />
       <Stack.Screen
         name="ReceptionPalette"
         component={ReceptionPaletteScreen}
-        options={{ headerTitle: 'Réception Palette' }}
+        options={{ headerTitle: 'Déposer Palette' }}
       />
       
     </Stack.Navigator>
