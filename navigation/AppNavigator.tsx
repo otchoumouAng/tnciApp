@@ -21,7 +21,7 @@ function HomeStack() {
       <Stack.Screen 
         name="HomeMain" 
         component={HomeScreen} 
-        options={{ headerTitle: 'Digital Commodity Sourcing' }}
+        options={{ headerTitle: 'Digital Commodity Sourcing' },{ headerShown: false }}
       />
       <Stack.Screen
         name="DeclarationPalette"
