@@ -9,16 +9,18 @@ import {
   Animated,
   Easing,
   Dimensions,
-  StatusBar
+  StatusBar,
+  ScrollView
 } from 'react-native';
-import { Palette } from './type';
-import { getPaletteById, deplacerPalette } from './routes'; // getPalettesEnTransit supprimé
+import { Palette, OperationType } from './type';
+import { getPaletteById, deplacerPalette, getOperationTypes } from './routes';
 import { Styles, Colors } from '../../styles/style';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../../contexts/AuthContext';
+import { Picker } from '@react-native-picker/picker';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const SCAN_SIZE = width * 0.7;
 
 // Couleurs et Thèmes
@@ -35,6 +37,11 @@ const DeplacerPaletteScreen = () => {
   const [scannedPalette, setScannedPalette] = useState<Palette | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [isValidationLoading, setValidationLoading] = useState<boolean>(false);
+
+  // Operation Types State
+  const [operationTypes, setOperationTypes] = useState<OperationType[]>([]);
+  const [selectedOperationTypeId, setSelectedOperationTypeId] = useState<number>(1);
+  const [isOperationTypesLoading, setIsOperationTypesLoading] = useState<boolean>(false);
 
   // UX Camera States
   const [torchEnabled, setTorchEnabled] = useState<boolean>(false);
@@ -55,6 +62,30 @@ const DeplacerPaletteScreen = () => {
     title: '',
     message: ''
   });
+
+  useEffect(() => {
+    fetchOperationTypes();
+  }, []);
+
+  const fetchOperationTypes = async () => {
+    setIsOperationTypesLoading(true);
+    try {
+        const types = await getOperationTypes();
+        setOperationTypes(types);
+        // Ensure "Transfert" (ID 1) is selected by default, or the first one if not present
+        const defaultOp = types.find(t => t.id === 1) || types[0];
+        if (defaultOp) {
+            setSelectedOperationTypeId(defaultOp.id);
+        }
+    } catch (error) {
+        console.error("Failed to fetch operation types", error);
+        // Fallback hardcoded if API fails, though routes.ts might throw.
+        // If routes throws, we might want to just handle it gracefully or retry.
+        // For now, let's keep the default ID 1.
+    } finally {
+        setIsOperationTypesLoading(false);
+    }
+  };
 
   // Animation de pulsation du bouton principal
   useEffect(() => {
@@ -133,7 +164,7 @@ const DeplacerPaletteScreen = () => {
     try {
       await deplacerPalette({
         paletteId: scannedPalette.id,
-        typeOperationID: 1,
+        typeOperationID: selectedOperationTypeId,
         creationUser: user.name,
         description: "Départ vers zone de transit"
       });
@@ -183,7 +214,9 @@ const DeplacerPaletteScreen = () => {
         <Text style={{ textAlign: 'center', marginBottom: 20, fontSize: 16, color: '#555' }}>
           L'accès à la caméra est nécessaire pour le scan.
         </Text>
-        <Button onPress={requestPermission} title="Autoriser la caméra" color={Colors.primary} />
+        <TouchableOpacity onPress={requestPermission} style={{backgroundColor: Colors.primary, padding: 15, borderRadius: 10}}>
+             <Text style={{color: 'white', fontWeight: 'bold'}}>Autoriser la caméra</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -328,6 +361,7 @@ const DeplacerPaletteScreen = () => {
               </TouchableOpacity>
             </View>
 
+            <ScrollView>
             {scannedPalette && (
               <View style={localStyles.confirmBody}>
                  <View style={localStyles.paletteIdBadge}>
@@ -345,6 +379,44 @@ const DeplacerPaletteScreen = () => {
                     </View>
                  </View>
 
+                 {/* --- NEW DETAILS --- */}
+                 <View style={[localStyles.detailGrid, { marginTop: -10 }]}>
+                    <View style={localStyles.detailItem}>
+                        <Text style={localStyles.detailLabel}>N° Production</Text>
+                        <Text style={localStyles.detailValue}>{scannedPalette.numeroProduction}</Text>
+                    </View>
+                 </View>
+                 <View style={[localStyles.detailGrid, { marginTop: -10 }]}>
+                    <View style={localStyles.detailItem}>
+                        <Text style={localStyles.detailLabel}>Produit</Text>
+                        <Text style={localStyles.detailValue}>{scannedPalette.produitDesignation}</Text>
+                    </View>
+                    <View style={localStyles.detailItem}>
+                        <Text style={localStyles.detailLabel}>Type</Text>
+                        <Text style={localStyles.detailValue}>{scannedPalette.typeProduitDesignation}</Text>
+                    </View>
+                 </View>
+
+                 {/* --- OPERATION TYPE SELECTOR (PICKER) --- */}
+                 <View style={localStyles.operationSection}>
+                    <Text style={localStyles.sectionTitle}>Type d'opération</Text>
+                    {isOperationTypesLoading ? (
+                        <ActivityIndicator color={Colors.primary} size="small" />
+                    ) : (
+                        <View style={localStyles.pickerContainer}>
+                            <Picker
+                                selectedValue={selectedOperationTypeId}
+                                onValueChange={(itemValue) => setSelectedOperationTypeId(itemValue)}
+                                style={localStyles.picker}
+                            >
+                                {operationTypes.map((op) => (
+                                    <Picker.Item key={op.id} label={op.designation} value={op.id} />
+                                ))}
+                            </Picker>
+                        </View>
+                    )}
+                 </View>
+
                  <View style={localStyles.actionWarning}>
                     <Ionicons name="arrow-forward-circle" size={20} color={Colors.primary} style={{marginRight:8}} />
                     <Text style={{color: Colors.textDark, fontSize: 13, fontWeight: '600'}}>
@@ -353,6 +425,7 @@ const DeplacerPaletteScreen = () => {
                  </View>
               </View>
             )}
+            </ScrollView>
 
             <View style={localStyles.confirmFooter}>
               {isValidationLoading ? (
@@ -433,7 +506,7 @@ const localStyles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   
   // Confirmation Card
-  confirmCard: { width: '100%', backgroundColor: 'white', borderRadius: 24, overflow: 'hidden' },
+  confirmCard: { width: '100%', maxHeight: '80%', backgroundColor: 'white', borderRadius: 24, overflow: 'hidden' },
   confirmHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
   confirmTitle: { fontSize: 18, fontWeight: 'bold', color: '#2D3748' },
   confirmBody: { padding: 25 },
@@ -444,6 +517,17 @@ const localStyles = StyleSheet.create({
   detailItem: { flex: 1, backgroundColor: '#FAFAFA', padding: 12, borderRadius: 12, marginRight: 10 },
   detailLabel: { fontSize: 11, color: '#A0AEC0', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 4 },
   detailValue: { fontSize: 14, color: '#4A5568', fontWeight: '600' },
+
+  // Operations
+  operationSection: { marginBottom: 20 },
+  sectionTitle: { fontSize: 14, fontWeight: '700', color: '#2D3748', marginBottom: 10 },
+  pickerContainer: {
+    borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, backgroundColor: '#F0F4F8', overflow: 'hidden'
+  },
+  picker: {
+    height: 50,
+    width: '100%'
+  },
   
   actionWarning: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EBF8FF', padding: 15, borderRadius: 12 },
   
